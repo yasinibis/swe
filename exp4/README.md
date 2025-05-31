@@ -101,7 +101,6 @@ website.monitor/
    - Could include HTTP utilities extracted from WebsiteChecker
    - Makes the code more maintainable and testable
 
-This structure follows the Single Responsibility Principle and provides good separation of concerns. It makes the system more maintainable and easier to extend. 
 
 ## 4. Options to Reduce Coupling
 
@@ -149,31 +148,6 @@ This structure follows the Single Responsibility Principle and provides good sep
 - Components can subscribe to events they care about
 - Reduces direct dependencies between components
 
-### 4. Data Transfer Objects (DTOs)
-- Create separate DTOs for data exchange between packages:
-  ```java
-  public class SubscriptionDTO {
-      private final String url;
-      private final NotificationPreferencesDTO preferences;
-  }
-  ```
-- Prevents direct dependency on domain objects
-
-### 5. Facade Pattern
-- Create facades for complex subsystems:
-  ```java
-  public class NotificationFacade {
-      private final EmailService emailService;
-      private final SMSService smsService;
-      private final PushNotificationService pushService;
-      
-      public void sendNotification(NotificationRequest request) {
-          // Handle notification logic
-      }
-  }
-  ```
-- Simplifies interfaces between packages
-
 ### 6. Observer Pattern
 - Implement observer pattern for notifications:
   ```java
@@ -198,11 +172,8 @@ This structure follows the Single Responsibility Principle and provides good sep
 - Decouples the request from its execution
 
 ### Benefits of Reduced Coupling
-1. Easier testing and mocking
+1. Easier testing
 2. More flexible system architecture
 3. Better maintainability
 4. Easier to extend functionality
 5. Improved code reusability
-6. Better separation of concerns
-
-These patterns and techniques can be implemented gradually as the system grows, starting with the most critical areas where coupling is causing issues. 
