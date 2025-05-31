@@ -1,3 +1,5 @@
+#  Due to personal reasons, I couldn't attend this week's session, but the task was completed.
+
 # Website Monitoring System
 
 ## How to Compile and Run
