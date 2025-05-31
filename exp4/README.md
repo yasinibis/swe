@@ -1,4 +1,4 @@
-#  Due to personal reasons, I couldn't attend this week's session, but the task was completed.
+ Due to personal reasons, I couldn't attend this week's session, but the task was completed.
 
 # Website Monitoring System
 
