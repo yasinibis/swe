@@ -7,3 +7,14 @@
 - Use 4 spaces for indentation
 - Add a newline at the end of files
 
+## Compile
+
+```
+javac *.java
+```
+
+## Run
+
+```
+java WebMonitor
+```

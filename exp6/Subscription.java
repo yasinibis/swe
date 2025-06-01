@@ -11,14 +11,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WebResourceSubscription implements Subject {
+public class Subscription implements Subject {
     private final URI resourceUrl;
     private LocalDateTime lastCheckTime;
     private String cachedContent = "";
     private final List<Observer> notificationSubscribers = new ArrayList<>();
     private ComparisonStrategy comparisonStrategy;
 
-    public WebResourceSubscription(URI resourceUrl, ComparisonStrategy strategy) {
+    public Subscription(URI resourceUrl, ComparisonStrategy strategy) {
         this.resourceUrl = resourceUrl;
         this.comparisonStrategy = strategy;
     }
