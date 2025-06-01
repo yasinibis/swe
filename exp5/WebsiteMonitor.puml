@@ -1,0 +1,106 @@
+@startuml WebsiteMonitor
+
+' Package declaration
+package "de.frauas.exp5" {
+    ' Interfaces
+    interface IResponseChannel {
+        + send(message: String): void
+    }
+
+    interface Subject {
+        + registerObserver(observer: Observer): void
+        + removeObserver(observer: Observer): void
+        + notifyObservers(): void
+    }
+
+    interface Observer {
+        + update(message: String): void
+    }
+
+    ' Classes
+    class WebsiteMonitor {
+        - users: HashMap<String, User>
+        - subscriptions: HashMap<String, Subscription>
+        + start(): void
+        + registerUser(name: String, frequency: int, website: URI, channel: IResponseChannel): WebsiteMonitor
+        + unregisterUser(name: String): WebsiteMonitor
+        + addUserWebsite(name: String, website: URI): WebsiteMonitor
+        + addUserResponseChannel(name: String, channel: IResponseChannel): WebsiteMonitor
+        - addOrGetSubscription(website: URI): Subscription
+        - checkUpdateLoop(): void
+    }
+
+    class Subscription {
+        - website: URI
+        - lastUpdate: LocalDateTime
+        - content: String
+        - observers: List<Observer>
+        + getWebsite(): URI
+        + checkUpdate(): void
+    }
+
+    class User {
+        - name: String
+        - frequency: int
+        - lastNotification: LocalDateTime
+        - responseChannels: List<IResponseChannel>
+        + addResponseChannel(channel: IResponseChannel): void
+        + removeResponseChannel(channel: IResponseChannel): void
+        + getName(): String
+    }
+
+    class MailChannel {
+        + send(message: String): void
+    }
+
+    class SmsChannel {
+        + send(message: String): void
+    }
+}
+
+' Relationships
+Subject <|.. Subscription
+Observer <|.. User
+IResponseChannel <|.. MailChannel
+IResponseChannel <|.. SmsChannel
+
+WebsiteMonitor o-- User
+WebsiteMonitor o-- Subscription
+User o-- IResponseChannel
+Subscription o-- Observer
+
+note right of Subject
+  Subject interface defines the
+  contract for objects that can
+  be observed
+end note
+
+note right of Observer
+  Observer interface defines the
+  contract for objects that can
+  receive updates
+end note
+
+note right of WebsiteMonitor
+  Main class that manages
+  users and subscriptions
+end note
+
+note right of Subscription
+  Implements Subject and
+  notifies observers of
+  website changes
+end note
+
+note right of User
+  Implements Observer and
+  manages notification
+  frequency and channels
+end note
+
+note right of IResponseChannel
+  Interface for different
+  notification channels
+end note
+
+@enduml 
