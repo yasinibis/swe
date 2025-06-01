@@ -6,7 +6,7 @@ import java.net.URL;
 import java.net.HttpURLConnection;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.security.MessageDigest;
+import website.monitor.strategies.*;
 
 public class WebsiteMonitor implements Subject {
     private final List<Observer> observers;
@@ -14,21 +14,35 @@ public class WebsiteMonitor implements Subject {
     private final int checkInterval;
     private final ScheduledExecutorService scheduler;
     private WebsiteStatus lastStatus;
-    private String lastContentHash;
-    private final Map<String, String> contentHashes;
+    private String lastContent;
+    private final Map<String, String> contentCache;
     private final Random random;
+    private ContentComparisonStrategy comparisonStrategy;
 
     public WebsiteMonitor() {
-        this("https://www.example.com", 60);
+        this("https://www.example.com", 60, new HtmlComparisonStrategy());
     }
 
     public WebsiteMonitor(String url, int checkInterval) {
+        this(url, checkInterval, new HtmlComparisonStrategy());
+    }
+
+    public WebsiteMonitor(String url, int checkInterval, ContentComparisonStrategy strategy) {
         this.url = url;
         this.checkInterval = checkInterval;
         this.observers = new ArrayList<>();
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
         this.random = new Random();
-        this.contentHashes = new ConcurrentHashMap<>();
+        this.contentCache = new ConcurrentHashMap<>();
+        this.comparisonStrategy = strategy;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setComparisonStrategy(ContentComparisonStrategy strategy) {
+        this.comparisonStrategy = strategy;
     }
 
     public void startMonitoring() {
@@ -37,16 +51,6 @@ public class WebsiteMonitor implements Subject {
 
     public void stopMonitoring() {
         scheduler.shutdown();
-    }
-
-    private String calculateContentHash(String content) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(content.getBytes("UTF-8"));
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private String fetchWebsiteContent() {
@@ -71,13 +75,12 @@ public class WebsiteMonitor implements Subject {
     public void checkWebsite() {
         try {
             String content = fetchWebsiteContent();
-            String currentHash = calculateContentHash(content);
             boolean contentChanged = false;
 
-            if (currentHash != null) {
-                String previousHash = contentHashes.get(url);
-                contentChanged = !currentHash.equals(previousHash);
-                contentHashes.put(url, currentHash);
+            if (content != null) {
+                String previousContent = contentCache.get(url);
+                contentChanged = !comparisonStrategy.compare(previousContent, content);
+                contentCache.put(url, content);
             }
 
             boolean isAvailable = content != null;
@@ -86,9 +89,9 @@ public class WebsiteMonitor implements Subject {
             String statusMessage;
             if (isAvailable) {
                 if (contentChanged) {
-                    statusMessage = "Website content has been updated";
+                    statusMessage = "Website content has been updated (" + comparisonStrategy.getStrategyName() + ")";
                 } else {
-                    statusMessage = "Website is up and content unchanged";
+                    statusMessage = "Website is up and content unchanged (" + comparisonStrategy.getStrategyName() + ")";
                 }
             } else {
                 statusMessage = "Website is down - Unable to fetch content";
@@ -105,12 +108,7 @@ public class WebsiteMonitor implements Subject {
 
     @Override
     public void registerObserver(Observer observer) {
-        if (!observers.contains(observer)) {
-            observers.add(observer);
-            if (lastStatus != null) {
-                observer.update(lastStatus);
-            }
-        }
+        observers.add(observer);
     }
 
     @Override
@@ -123,10 +121,5 @@ public class WebsiteMonitor implements Subject {
         for (Observer observer : observers) {
             observer.update(status);
         }
-    }
-
-    @Override
-    public List<Observer> getObservers() {
-        return new ArrayList<>(observers);
     }
 } 

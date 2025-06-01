@@ -2,10 +2,14 @@ package website.monitor;
 
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
+import website.monitor.strategies.*;
 
 public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+        Map<String, WebsiteMonitor> monitors = new HashMap<>();
         
         // Create notification preferences
         System.out.println("=== Website Monitor Setup ===");
@@ -42,31 +46,15 @@ public class Main {
         NotificationPreferences preferences = new NotificationPreferences(channel, frequency, contactInfo);
         NotificationService notificationService = new NotificationService(preferences);
         
-        // Create website monitors
-        WebsiteMonitor monitor1 = new WebsiteMonitor("https://www.example.com", 30);
-        WebsiteMonitor monitor2 = new WebsiteMonitor("https://www.google.com", 30);
-        
-        // Register observer
-        monitor1.registerObserver(notificationService);
-        monitor2.registerObserver(notificationService);
-        
-        // Subscribe to websites
-        notificationService.subscribe("https://www.example.com");
-        notificationService.subscribe("https://www.google.com");
-        
-        // Start monitoring
-        System.out.println("\n=== Starting Website Monitoring ===");
-        monitor1.startMonitoring();
-        monitor2.startMonitoring();
-        
         // Interactive menu
         while (true) {
             System.out.println("\n=== Website Monitor Menu ===");
             System.out.println("1. Change notification preferences");
-            System.out.println("2. Subscribe to a website");
+            System.out.println("2. Register and monitor a new website");
             System.out.println("3. Unsubscribe from a website");
             System.out.println("4. Check subscription status");
-            System.out.println("5. Exit");
+            System.out.println("5. Change comparison strategy");
+            System.out.println("6. Exit");
             System.out.print("Enter your choice: ");
             
             int choice = scanner.nextInt();
@@ -78,48 +66,72 @@ public class Main {
                     System.out.println("1. Email");
                     System.out.println("2. SMS");
                     System.out.println("3. Console");
-                    int newChannelChoice = scanner.nextInt();
+                    int newChannel = scanner.nextInt();
                     
                     System.out.println("\nSelect new notification frequency:");
                     System.out.println("1. Daily");
                     System.out.println("2. Weekly");
                     System.out.println("3. Monthly");
-                    int newFrequencyChoice = scanner.nextInt();
+                    int newFrequency = scanner.nextInt();
                     
                     scanner.nextLine(); // Consume newline
                     
                     System.out.println("\nEnter new contact information:");
-                    String newContactInfo = scanner.nextLine();
+                    String newContact = scanner.nextLine();
                     
-                    NotificationPreferences.Channel newChannel = switch (newChannelChoice) {
+                    NotificationPreferences.Channel channel2 = switch (newChannel) {
                         case 1 -> NotificationPreferences.Channel.EMAIL;
                         case 2 -> NotificationPreferences.Channel.SMS;
                         default -> NotificationPreferences.Channel.CONSOLE;
                     };
                     
-                    NotificationPreferences.Frequency newFrequency = switch (newFrequencyChoice) {
+                    NotificationPreferences.Frequency frequency2 = switch (newFrequency) {
                         case 1 -> NotificationPreferences.Frequency.DAILY;
                         case 2 -> NotificationPreferences.Frequency.WEEKLY;
                         default -> NotificationPreferences.Frequency.MONTHLY;
                     };
                     
-                    NotificationPreferences newPreferences = new NotificationPreferences(newChannel, newFrequency, newContactInfo);
-                    notificationService.setPreferences(newPreferences);
-                    System.out.println("Notification preferences updated successfully!");
+                    preferences = new NotificationPreferences(channel2, frequency2, newContact);
+                    notificationService.updatePreferences(preferences);
                 }
                 
                 case 2 -> {
-                    System.out.println("\nEnter website URL to subscribe:");
+                    System.out.println("\nEnter website URL to monitor:");
                     String url = scanner.nextLine();
+                    
+                    System.out.println("Select comparison strategy:");
+                    System.out.println("1. Size Comparison");
+                    System.out.println("2. HTML Content Comparison");
+                    System.out.println("3. Text Content Comparison");
+                    int strategyChoice = scanner.nextInt();
+                    
+                    ContentComparisonStrategy strategy = switch (strategyChoice) {
+                        case 1 -> new SizeComparisonStrategy();
+                        case 2 -> new HtmlComparisonStrategy();
+                        case 3 -> new TextComparisonStrategy();
+                        default -> new HtmlComparisonStrategy();
+                    };
+                    
+                    WebsiteMonitor monitor = new WebsiteMonitor(url, 30, strategy);
+                    monitor.registerObserver(notificationService);
+                    monitors.put(url, monitor);
                     notificationService.subscribe(url);
-                    System.out.println("Subscribed to " + url);
+                    monitor.startMonitoring();
+                    System.out.println("Started monitoring " + url);
                 }
                 
                 case 3 -> {
                     System.out.println("\nEnter website URL to unsubscribe:");
                     String url = scanner.nextLine();
-                    notificationService.unsubscribe(url);
-                    System.out.println("Unsubscribed from " + url);
+                    WebsiteMonitor monitor = monitors.get(url);
+                    if (monitor != null) {
+                        monitor.stopMonitoring();
+                        monitors.remove(url);
+                        notificationService.unsubscribe(url);
+                        System.out.println("Unsubscribed from " + url);
+                    } else {
+                        System.out.println("Website not found in monitors");
+                    }
                 }
                 
                 case 4 -> {
@@ -130,9 +142,35 @@ public class Main {
                 }
                 
                 case 5 -> {
+                    System.out.println("\nEnter website URL to change strategy:");
+                    String url = scanner.nextLine();
+                    WebsiteMonitor monitor = monitors.get(url);
+                    if (monitor != null) {
+                        System.out.println("Select comparison strategy:");
+                        System.out.println("1. Size Comparison");
+                        System.out.println("2. HTML Content Comparison");
+                        System.out.println("3. Text Content Comparison");
+                        int strategyChoice = scanner.nextInt();
+                        
+                        ContentComparisonStrategy strategy = switch (strategyChoice) {
+                            case 1 -> new SizeComparisonStrategy();
+                            case 2 -> new HtmlComparisonStrategy();
+                            case 3 -> new TextComparisonStrategy();
+                            default -> new HtmlComparisonStrategy();
+                        };
+                        
+                        monitor.setComparisonStrategy(strategy);
+                        System.out.println("Strategy updated for " + url);
+                    } else {
+                        System.out.println("Website not found in monitors");
+                    }
+                }
+                
+                case 6 -> {
                     System.out.println("\nStopping website monitoring...");
-                    monitor1.stopMonitoring();
-                    monitor2.stopMonitoring();
+                    for (WebsiteMonitor monitor : monitors.values()) {
+                        monitor.stopMonitoring();
+                    }
                     scanner.close();
                     return;
                 }
