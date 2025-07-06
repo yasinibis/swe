@@ -1,20 +1,16 @@
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
 public class User implements Observer {
     private final String name;
-    private final int frequency;
     private LocalDateTime lastNotification;
     private final List<ResponseChannel> responseChannels = new ArrayList<>();
 
     public User(String name, int frequency, ResponseChannel responseChannel) {
         this.name = name;
         this.frequency = frequency;
-        if (responseChannel != null) {
-            addResponseChannel(responseChannel);
-        }
+        if (responseChannel != null) {addResponseChannel(responseChannel);}
     }
 
     public void addResponseChannel(ResponseChannel responseChannel) {
@@ -27,12 +23,8 @@ public class User implements Observer {
 
     @Override
     public void update(String message) {
-        if (lastNotification == null || 
-            lastNotification.plus((long) frequency * Settings.NOTIFICATION_INTERVAL, ChronoUnit.SECONDS)
-            .isBefore(LocalDateTime.now())) {
-            
-            String personalizedMessage = message.replace(" - ", " - " + name + " - ");
-            responseChannels.forEach(channel -> channel.send(personalizedMessage));
+        if (lastNotification == null) {
+            responseChannels.forEach(channel -> channel.send("Message"));
             lastNotification = LocalDateTime.now();
         }
     }
