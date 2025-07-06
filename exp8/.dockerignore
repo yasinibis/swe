@@ -1,0 +1,21 @@
+# Git files
+.git
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Build artifacts
+*.class
+target/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files
+Dockerfile
+.dockerignore 
